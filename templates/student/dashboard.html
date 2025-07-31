@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Student Dashboard - Attendance System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2><i class="fas fa-user-graduate"></i> Student Dashboard</h2>
+        <p class="text-muted">Manage your attendance and view your records</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="fas fa-user-plus fa-3x text-primary mb-3"></i>
+                <h5 class="card-title">Register New Student</h5>
+                <p class="card-text">Register as a new student and set up face recognition for automatic attendance.</p>
+                <a href="{{ url_for('student_register') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Register Now
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-search"></i> View Attendance</h5>
+                <p class="card-text">Enter your Student ID to view your attendance records.</p>
+                <form method="GET" action="">
+                    <div class="input-group">
+                        <input type="text" class="form-control" name="student_id" placeholder="Enter Student ID (e.g., S001)" required>
+                        <button class="btn btn-outline-primary" type="button" onclick="viewAttendance()">
+                            <i class="fas fa-eye"></i> View Records
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-info-circle"></i> How It Works</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 text-center mb-3">
+                        <i class="fas fa-user-plus fa-2x text-primary mb-2"></i>
+                        <h6>1. Register</h6>
+                        <p class="text-muted">Create your student profile with basic information</p>
+                    </div>
+                    <div class="col-md-4 text-center mb-3">
+                        <i class="fas fa-camera fa-2x text-success mb-2"></i>
+                        <h6>2. Upload Photo</h6>
+                        <p class="text-muted">Upload a clear photo for face recognition training</p>
+                    </div>
+                    <div class="col-md-4 text-center mb-3">
+                        <i class="fas fa-check-circle fa-2x text-warning mb-2"></i>
+                        <h6>3. Auto Attendance</h6>
+                        <p class="text-muted">Your attendance will be marked automatically when detected</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="alert alert-info">
+            <i class="fas fa-lightbulb"></i>
+            <strong>Tips for Better Recognition:</strong>
+            <ul class="mb-0 mt-2">
+                <li>Use a clear, well-lit photo showing your face clearly</li>
+                <li>Avoid photos with multiple people</li>
+                <li>Make sure your face is not covered by glasses, masks, or shadows</li>
+                <li>Sit in well-lit areas during class for better recognition</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function viewAttendance() {
+    const studentId = document.querySelector('input[name="student_id"]').value;
+    if (studentId) {
+        window.location.href = `{{ url_for('student_attendance', student_id='') }}${studentId}`;
+    }
+}
+
+// Allow Enter key to trigger search
+document.querySelector('input[name="student_id"]').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        viewAttendance();
+    }
+});
+</script>
+{% endblock %}

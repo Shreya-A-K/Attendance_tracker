@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}{{ student.name }} - Attendance Records{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2><i class="fas fa-calendar-check"></i> Attendance Records</h2>
+                <p class="text-muted">{{ student.name }} ({{ student.student_id }})</p>
+            </div>
+            <a href="{{ url_for('student_dashboard') }}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card attendance-stats">
+            <div class="card-body text-center">
+                <h3>{{ attendances|length }}</h3>
+                <p class="mb-0">Total Sessions</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <h3>{{ attendances|selectattr('0.status', 'equalto', 'present')|list|length }}</h3>
+                <p class="mb-0">Present</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-warning text-white">
+            <div class="card-body text-center">
+                <h3>
+                    {% set present_count = attendances|selectattr('0.status', 'equalto', 'present')|list|length %}
+                    {% if attendances|length > 0 %}
+                        {{ "%.1f"|format((present_count / attendances|length) * 100) }}%
+                    {% else %}
+                        0%
+                    {% endif %}
+                </h3>
+                <p class="mb-0">Attendance Rate</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-list"></i> Attendance History</h5>
+            </div>
+            <div class="card-body">
+                {% if attendances %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Class</th>
+                                    <th>Subject</th>
+                                    <th>Time</th>
+                                    <th>Status</th>
+                                    <th>Confidence</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for attendance, session, class in attendances %}
+                                <tr>
+                                    <td>{{ session.session_date.strftime('%Y-%m-%d') }}</td>
+                                    <td>{{ class.name }}</td>
+                                    <td>{{ class.subject }}</td>
+                                    <td>{{ attendance.marked_at.strftime('%H:%M:%S') if attendance.marked_at else 'N/A' }}</td>
+                                    <td>
+                                        {% if attendance.status == 'present' %}
+                                            <span class="badge bg-success">Present</span>
+                                        {% elif attendance.status == 'late' %}
+                                            <span class="badge bg-warning">Late</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Absent</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if attendance.confidence_score %}
+                                            {{ "%.2f"|format(attendance.confidence_score) }}
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                        <h5>No Attendance Records Found</h5>
+                        <p class="text-muted">You haven't been marked present in any sessions yet.</p>
+                        {% if not student.face_encoding %}
+                            <div class="alert alert-warning mt-3">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <strong>Note:</strong> You need to register your face first to enable automatic attendance marking.
+                                <a href="{{ url_for('student_register_face', student_id=student.id) }}" class="btn btn-sm btn-warning ms-2">
+                                    Register Face
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if attendances %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6><i class="fas fa-chart-bar"></i> Attendance Summary</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <canvas id="attendanceChart" width="400" height="200"></canvas>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Quick Stats:</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-check text-success"></i> Total Present: {{ attendances|selectattr('0.status', 'equalto', 'present')|list|length }}</li>
+                            <li><i class="fas fa-clock text-warning"></i> Total Late: {{ attendances|selectattr('0.status', 'equalto', 'late')|list|length }}</li>
+                            <li><i class="fas fa-times text-danger"></i> Total Absent: {{ attendances|selectattr('0.status', 'equalto', 'absent')|list|length }}</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% if attendances %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const ctx = document.getElementById('attendanceChart').getContext('2d');
+const presentCount = {{ attendances|selectattr('0.status', 'equalto', 'present')|list|length }};
+const lateCount = {{ attendances|selectattr('0.status', 'equalto', 'late')|list|length }};
+const absentCount = {{ attendances|selectattr('0.status', 'equalto', 'absent')|list|length }};
+
+new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+        labels: ['Present', 'Late', 'Absent'],
+        datasets: [{
+            data: [presentCount, lateCount, absentCount],
+            backgroundColor: ['#28a745', '#ffc107', '#dc3545'],
+            borderWidth: 2
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+</script>
+{% endif %}
+{% endblock %}

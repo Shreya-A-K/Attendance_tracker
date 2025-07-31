@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Face Registration - Attendance System{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4><i class="fas fa-camera"></i> Face Registration for {{ student.name }}</h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>Important:</strong> Upload a clear photo of your face for the recognition system to work properly.
+                </div>
+
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="photo" class="form-label">Upload Your Photo *</label>
+                        <input type="file" class="form-control" id="photo" name="photo" 
+                               accept="image/*" required>
+                        <div class="form-text">Supported formats: JPG, PNG, GIF (Max 5MB)</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div id="preview-container" style="display: none;">
+                            <label class="form-label">Preview:</label>
+                            <div class="text-center">
+                                <img id="photo-preview" src="" alt="Photo Preview" 
+                                     style="max-width: 300px; max-height: 300px; border: 2px solid #ddd; border-radius: 8px;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-upload"></i> Register Face
+                        </button>
+                        <a href="{{ url_for('student_dashboard') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to Dashboard
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6><i class="fas fa-lightbulb"></i> Photo Guidelines</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-success"><i class="fas fa-check"></i> Good Photos:</h6>
+                        <ul class="text-muted">
+                            <li>Clear, well-lit face</li>
+                            <li>Looking directly at camera</li>
+                            <li>No shadows on face</li>
+                            <li>Single person in photo</li>
+                            <li>No sunglasses or masks</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-danger"><i class="fas fa-times"></i> Avoid:</h6>
+                        <ul class="text-muted">
+                            <li>Blurry or dark images</li>
+                            <li>Multiple people</li>
+                            <li>Side profiles</li>
+                            <li>Heavy shadows</li>
+                            <li>Covered face</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('photo').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('photo-preview').src = e.target.result;
+            document.getElementById('preview-container').style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    } else {
+        document.getElementById('preview-container').style.display = 'none';
+    }
+});
+</script>
+{% endblock %}

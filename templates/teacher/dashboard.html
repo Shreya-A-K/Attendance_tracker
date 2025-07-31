@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Teacher Dashboard - Attendance System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2><i class="fas fa-chalkboard-teacher"></i> Teacher Dashboard</h2>
+        <p class="text-muted">Manage your classes and attendance sessions</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-users"></i> Select Teacher Profile</h5>
+            </div>
+            <div class="card-body">
+                {% if teachers %}
+                    <div class="row">
+                        {% for teacher in teachers %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card border-primary">
+                                <div class="card-body">
+                                    <h6 class="card-title">{{ teacher.name }}</h6>
+                                    <p class="card-text">
+                                        <small class="text-muted">
+                                            <i class="fas fa-id-card"></i> ID: {{ teacher.teacher_id }}<br>
+                                            <i class="fas fa-envelope"></i> {{ teacher.email }}<br>
+                                            <i class="fas fa-building"></i> {{ teacher.department }}
+                                        </small>
+                                    </p>
+                                    <a href="{{ url_for('teacher_classes', teacher_id=teacher.id) }}" class="btn btn-primary">
+                                        <i class="fas fa-arrow-right"></i> Manage Classes
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-user-times fa-3x text-muted mb-3"></i>
+                        <h5>No Teachers Found</h5>
+                        <p class="text-muted">No teacher profiles are available in the system.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-info-circle"></i> Teacher Features</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 text-center mb-3">
+                        <i class="fas fa-play-circle fa-2x text-success mb-2"></i>
+                        <h6>Start Sessions</h6>
+                        <p class="text-muted">Begin real-time attendance tracking for your classes</p>
+                    </div>
+                    <div class="col-md-4 text-center mb-3">
+                        <i class="fas fa-camera fa-2x text-primary mb-2"></i>
+                        <h6>Live Recognition</h6>
+                        <p class="text-muted">Automatic face recognition and attendance marking</p>
+                    </div>
+                    <div class="col-md-4 text-center mb-3">
+                        <i class="fas fa-chart-line fa-2x text-warning mb-2"></i>
+                        <h6>Generate Reports</h6>
+                        <p class="text-muted">View detailed attendance reports and statistics</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
