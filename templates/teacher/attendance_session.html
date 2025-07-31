@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+
+{% block title %}Live Attendance - {{ class_obj.name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2><i class="fas fa-video"></i> Live Attendance Session</h2>
+                <p class="text-muted">{{ class_obj.name }} ({{ class_obj.class_code }}) - {{ session.session_date }}</p>
+            </div>
+            <div>
+                <button id="startCamera" class="btn btn-success me-2">
+                    <i class="fas fa-play"></i> Start Camera
+                </button>
+                <button id="stopCamera" class="btn btn-warning me-2" style="display: none;">
+                    <i class="fas fa-pause"></i> Stop Camera
+                </button>
+                <a href="{{ url_for('end_attendance_session', session_id=session.id) }}" 
+                   class="btn btn-danger" onclick="return confirm('End this session?')">
+                    <i class="fas fa-stop"></i> End Session
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-camera"></i> Camera Feed</h5>
+            </div>
+            <div class="card-body text-center">
+                <div class="video-container">
+                    <img id="videoFeed" src="" alt="Video Feed" class="video-feed" style="display: none;">
+                    <div id="cameraPlaceholder" class="py-5">
+                        <i class="fas fa-camera fa-3x text-muted mb-3"></i>
+                        <h5>Camera Not Started</h5>
+                        <p class="text-muted">Click "Start Camera" to begin face recognition</p>
+                    </div>
+                    <div class="recognition-overlay" id="recognitionOverlay" style="display: none;">
+                        <div id="recognizedStudents">No students detected</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-users"></i> Attendance Status</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>Session Started:</span>
+                        <span class="text-success">{{ session.start_time.strftime('%H:%M:%S') }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Students Present:</span>
+                        <span class="badge bg-success" id="presentCount">0</span>
+                    </div>
+                </div>
+
+                <div id="attendanceList">
+                    <p class="text-muted text-center">
+                        <i class="fas fa-clock"></i><br>
+                        Waiting for students to be detected...
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6><i class="fas fa-cog"></i> Settings</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">Recognition Sensitivity:</label>
+                    <input type="range" class="form-range" id="sensitivitySlider" 
+                           min="0.3" max="0.8" step="0.1" value="0.6">
+                    <small class="text-muted">Current: <span id="sensitivityValue">0.6</span></small>
+                </div>
+                
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="autoRefresh" checked>
+                    <label class="form-check-label" for="autoRefresh">
+                        Auto-refresh attendance list
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-list"></i> Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="btn-group" role="group">
+                    <a href="{{ url_for('session_report', session_id=session.id) }}" 
+                       class="btn btn-outline-primary">
+                        <i class="fas fa-chart-bar"></i> View Report
+                    </a>
+                    <button class="btn btn-outline-info" onclick="exportAttendance()">
+                        <i class="fas fa-download"></i> Export CSV
+                    </button>
+                    <button class="btn btn-outline-warning" onclick="manualAttendance()">
+                        <i class="fas fa-edit"></i> Manual Entry
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let cameraActive = false;
+let recognitionInterval;
+
+document.getElementById('startCamera').addEventListener('click', function() {
+    fetch('/start_camera')
+        .then(response => response.json())
+        .then(data => {
+            cameraActive = true;
+            document.getElementById('videoFeed').src = '/video_feed';
+            document.getElementById('videoFeed').style.display = 'block';
+            document.getElementById('cameraPlaceholder').style.display = 'none';
+            document.getElementById('recognitionOverlay').style.display = 'block';
+            document.getElementById('startCamera').style.display = 'none';
+            document.getElementById('stopCamera').style.display = 'inline-block';
+            
+            // Start polling for recognized students
+            startRecognitionPolling();
+        })
+        .catch(error => {
+            console.error('Error starting camera:', error);
+            alert('Failed to start camera. Please check if camera is available.');
+        });
+});
+
+document.getElementById('stopCamera').addEventListener('click', function() {
+    fetch('/stop_camera')
+        .then(response => response.json())
+        .then(data => {
+            cameraActive = false;
+            document.getElementById('videoFeed').style.display = 'none';
+            document.getElementById('cameraPlaceholder').style.display = 'block';
+            document.getElementById('recognitionOverlay').style.display = 'none';
+            document.getElementById('startCamera').style.display = 'inline-block';
+            document.getElementById('stopCamera').style.display = 'none';
+            
+            // Stop polling
+            if (recognitionInterval) {
+                clearInterval(recognitionInterval);
+            }
+        });
+});
+
+function startRecognitionPolling() {
+    recognitionInterval = setInterval(() => {
+        if (cameraActive) {
+            fetch('/get_recognized_students')
+                .then(response => response.json())
+                .then(data => {
+                    updateRecognitionDisplay(data.students);
+                })
+                .catch(error => {
+                    console.error('Error getting recognized students:', error);
+                });
+        }
+    }, 2000); // Poll every 2 seconds
+}
+
+function updateRecognitionDisplay(students) {
+    const overlay = document.getElementById('recognizedStudents');
+    const attendanceList = document.getElementById('attendanceList');
+    const presentCount = document.getElementById('presentCount');
+    
+    if (students.length > 0) {
+        // Update overlay
+        const names = students.map(s => `${s.name} (${(s.confidence * 100).toFixed(1)}%)`);
+        overlay.innerHTML = `Detected: ${names.join(', ')}`;
+        
+        // Update attendance list
+        let listHtml = '';
+        students.forEach(student => {
+            listHtml += `
+                <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-success bg-opacity-10 rounded">
+                    <div>
+                        <strong>${student.name}</strong><br>
+                        <small class="text-muted">Confidence: ${(student.confidence * 100).toFixed(1)}%</small>
+                    </div>
+                    <span class="badge bg-success">Present</span>
+                </div>
+            `;
+        });
+        attendanceList.innerHTML = listHtml;
+        presentCount.textContent = students.length;
+    } else {
+        overlay.innerHTML = 'No students detected';
+    }
+}
+
+// Sensitivity slider
+document.getElementById('sensitivitySlider').addEventListener('input', function() {
+    document.getElementById('sensitivityValue').textContent = this.value;
+    // In a real implementation, this would update the recognition sensitivity
+});
+
+function exportAttendance() {
+    // In a real implementation, this would export attendance data
+    alert('Export functionality would be implemented here');
+}
+
+function manualAttendance() {
+    // In a real implementation, this would open a manual attendance entry form
+    alert('Manual attendance entry would be implemented here');
+}
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', function() {
+    if (cameraActive) {
+        fetch('/stop_camera');
+    }
+});
+</script>
+{% endblock %}

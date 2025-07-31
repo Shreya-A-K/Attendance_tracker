@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+
+{% block title %}Controller Dashboard - Attendance System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2><i class="fas fa-user-tie"></i> Examination Controller Dashboard</h2>
+        <p class="text-muted">System overview and administrative controls</p>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-users fa-2x mb-2"></i>
+                <h3>{{ total_students }}</h3>
+                <p class="mb-0">Total Students</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-chalkboard fa-2x mb-2"></i>
+                <h3>{{ total_classes }}</h3>
+                <p class="mb-0">Active Classes</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-calendar-check fa-2x mb-2"></i>
+                <h3>{{ total_sessions }}</h3>
+                <p class="mb-0">Total Sessions</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-percentage fa-2x mb-2"></i>
+                <h3>85%</h3>
+                <p class="mb-0">Avg Attendance</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-history"></i> Recent Sessions</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_sessions %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Class</th>
+                                    <th>Subject</th>
+                                    <th>Duration</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for session, class in recent_sessions %}
+                                <tr>
+                                    <td>{{ session.session_date.strftime('%Y-%m-%d') }}</td>
+                                    <td>{{ class.name }}</td>
+                                    <td>{{ class.subject }}</td>
+                                    <td>
+                                        {% if session.end_time %}
+                                            {{ ((session.end_time - session.start_time).seconds // 60) }} min
+                                        {% else %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if session.is_active %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Completed</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-calendar-times fa-2x text-muted mb-2"></i>
+                        <p class="text-muted">No recent sessions found</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-tools"></i> Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('controller_reports') }}" class="btn btn-primary">
+                        <i class="fas fa-chart-bar"></i> View Reports
+                    </a>
+                    <a href="{{ url_for('controller_students') }}" class="btn btn-success">
+                        <i class="fas fa-users"></i> Manage Students
+                    </a>
+                    <button class="btn btn-info" onclick="exportSystemData()">
+                        <i class="fas fa-download"></i> Export Data
+                    </button>
+                    <button class="btn btn-warning" onclick="systemSettings()">
+                        <i class="fas fa-cog"></i> System Settings
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6><i class="fas fa-exclamation-triangle"></i> System Alerts</h6>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info alert-sm">
+                    <i class="fas fa-info-circle"></i>
+                    <small>System running normally</small>
+                </div>
+                <div class="alert alert-warning alert-sm">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <small>3 students need face registration</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-line"></i> Attendance Trends</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="attendanceTrendChart" width="400" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Sample attendance trend chart
+const ctx = document.getElementById('attendanceTrendChart').getContext('2d');
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6'],
+        datasets: [{
+            label: 'Attendance Rate (%)',
+            data: [85, 88, 82, 90, 87, 85],
+            borderColor: '#007bff',
+            backgroundColor: 'rgba(0, 123, 255, 0.1)',
+            tension: 0.4
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                max: 100,
+                ticks: {
+                    callback: function(value) {
+                        return value + '%';
+                    }
+                }
+            }
+        }
+    }
+});
+
+function exportSystemData() {
+    alert('System data export functionality would be implemented here');
+}
+
+function systemSettings() {
+    alert('System settings panel would be implemented here');
+}
+</script>
+{% endblock %}

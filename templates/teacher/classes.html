@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}{{ teacher.name }} - Classes{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2><i class="fas fa-book"></i> My Classes</h2>
+                <p class="text-muted">{{ teacher.name }} - {{ teacher.department }}</p>
+            </div>
+            <a href="{{ url_for('teacher_dashboard') }}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    {% if classes %}
+        {% for class in classes %}
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">{{ class.name }}</h6>
+                    <span class="badge bg-primary">{{ class.class_code }}</span>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">
+                        <i class="fas fa-book-open"></i> <strong>Subject:</strong> {{ class.subject }}<br>
+                        <i class="fas fa-clock"></i> <strong>Schedule:</strong> {{ class.schedule_time }}<br>
+                        <i class="fas fa-map-marker-alt"></i> <strong>Room:</strong> {{ class.room }}
+                    </p>
+                    
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('start_attendance_session', class_id=class.id) }}" 
+                           class="btn btn-success">
+                            <i class="fas fa-play"></i> Start Attendance Session
+                        </a>
+                        
+                        <div class="btn-group" role="group">
+                            <a href="#" class="btn btn-outline-info btn-sm" 
+                               onclick="viewSessions({{ class.id }})">
+                                <i class="fas fa-history"></i> View Sessions
+                            </a>
+                            <a href="#" class="btn btn-outline-warning btn-sm"
+                               onclick="viewEnrollments({{ class.id }})">
+                                <i class="fas fa-users"></i> Students
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="fas fa-chalkboard fa-3x text-muted mb-3"></i>
+                <h5>No Classes Assigned</h5>
+                <p class="text-muted">You don't have any classes assigned yet.</p>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Sessions Modal -->
+<div class="modal fade" id="sessionsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Class Sessions</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="sessionsContent">
+                <!-- Content loaded via AJAX -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Students Modal -->
+<div class="modal fade" id="studentsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Enrolled Students</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="studentsContent">
+                <!-- Content loaded via AJAX -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function viewSessions(classId) {
+    // In a real implementation, this would load session data via AJAX
+    document.getElementById('sessionsContent').innerHTML = `
+        <div class="text-center">
+            <i class="fas fa-spinner fa-spin fa-2x"></i>
+            <p>Loading sessions...</p>
+        </div>
+    `;
+    new bootstrap.Modal(document.getElementById('sessionsModal')).show();
+    
+    // Simulate loading
+    setTimeout(() => {
+        document.getElementById('sessionsContent').innerHTML = `
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i>
+                Session history would be displayed here. This feature requires additional backend implementation.
+            </div>
+        `;
+    }, 1000);
+}
+
+function viewEnrollments(classId) {
+    document.getElementById('studentsContent').innerHTML = `
+        <div class="text-center">
+            <i class="fas fa-spinner fa-spin fa-2x"></i>
+            <p>Loading students...</p>
+        </div>
+    `;
+    new bootstrap.Modal(document.getElementById('studentsModal')).show();
+    
+    // Simulate loading
+    setTimeout(() => {
+        document.getElementById('studentsContent').innerHTML = `
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i>
+                Enrolled students list would be displayed here. This feature requires additional backend implementation.
+            </div>
+        `;
+    }, 1000);
+}
+</script>
+{% endblock %}
